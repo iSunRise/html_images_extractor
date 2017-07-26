@@ -37,8 +37,11 @@ module HtmlImagesExtractor
 
 
       def base64_to_image(image_src, temp_path)
+        return nil if image_src.empty?
+
         base_64_encoded_data = image_src.last
         extension = image_src.first.scan(/\/(.*?);/i).flatten.first
+        extension.insert(0, '.') if extension
         rand_name = SecureRandom.hex
 
         begin
@@ -47,13 +50,15 @@ module HtmlImagesExtractor
           return nil
         end
 
+        file_name = "#{rand_name}#{extension}"
+
         Dir.chdir(temp_path) do
-          File.open("#{rand_name}.#{extension}", 'wb') do |file|
+          File.open(file_name, 'wb') do |file|
             file.write(base_64_decoded_data)
           end
         end
 
-        "#{rand_name}.#{extension}"
+        file_name
       end
 
     end
