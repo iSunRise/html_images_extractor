@@ -3,17 +3,21 @@ require 'securerandom'
 require 'tmpdir'
 require 'base64'
 require 'phashion'
+require 'fastimage'
 
 module HtmlImagesExtractor
   class Html
     class << self
+      MIN_IMAGE_WIDTH = 15
+      MIN_IMAGE_HEIGHT = 15
+
       def parse(input_file_path)
         temp_path = Dir.mktmpdir
 
         @doc = Nokogiri::HTML(File.open(input_file_path))
 
         images = @doc.xpath("//img").map do |image_tag|
-          image_src = image_tag.values.first.split(',')
+          image_src = image_tag.values.first
 
           file_name = base64_to_image(image_src, temp_path)
           next if file_name.nil?
@@ -29,7 +33,7 @@ module HtmlImagesExtractor
           { file: file_path, hash: perceptual_hash,  id: id }
         end
 
-        { "html": @doc.to_html, "images": images }
+        { "html": @doc.to_html, "images": images.compact }
       end
 
 
@@ -39,8 +43,15 @@ module HtmlImagesExtractor
       def base64_to_image(image_src, temp_path)
         return nil if image_src.empty?
 
-        base_64_encoded_data = image_src.last
-        extension = image_src.first.scan(/\/(.*?);/i).flatten.first
+        width, height = FastImage.size(image_src)
+        if width.nil? || height.nil? || (width < MIN_IMAGE_WIDTH && height < MIN_IMAGE_HEIGHT)
+          return nil
+        end
+
+        information, base_64_encoded_data = image_src.split(',')
+        return nil if information.nil? || base_64_encoded_data.nil?
+
+        extension = information.scan(/\/(.*?);/i).flatten.first
         extension.insert(0, '.') if extension
         rand_name = SecureRandom.hex
 
