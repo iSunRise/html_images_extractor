@@ -1,8 +1,6 @@
 require 'spec_helper'
 require 'html_images_extractor'
 
-require 'pry'
-
 RSpec.describe HtmlImagesExtractor do
   let(:input_file_path) { File.join('spec/fixtures', "#{@file_name}") }
   let(:result_hash) { HtmlImagesExtractor.detect_and_parse(input_file_path) }
@@ -12,10 +10,9 @@ RSpec.describe HtmlImagesExtractor do
     expect(result_hash[:images][0][:hash]).to eq(15199491225797313363)
   end
 
-  it "returns images array with file attribute without extension" do
+  it "returns nil in images, if src in img tag in html without extension" do
     @file_name = 'empty_image_extension.html'
-    expect(File.extname(result_hash[:images][0][:file])).to be_empty
-    expect(result_hash[:images][0][:hash]).to eq(15199491225797313363)
+    expect(result_hash[:images][0]).to be_nil
   end
 
   it "returns nil in images, if src in img tag in html with external link" do
@@ -35,6 +32,11 @@ RSpec.describe HtmlImagesExtractor do
 
   it "returns nil in images, if src in img tag in html without base64" do
     @file_name = 'empty_base64.html'
+    expect(result_hash[:images][0]).to be_nil
+  end
+
+  it "return nil in images, if image dimension is less than 15x15" do
+    @file_name = 'small_image.html'
     expect(result_hash[:images][0]).to be_nil
   end
 end
